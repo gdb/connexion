@@ -19,6 +19,7 @@ import logging
 import six
 import sys
 from jsonschema import draft4_format_checker, validate, ValidationError
+from werkzeug.exceptions import BadRequest
 
 from ..problem import problem
 from ..utils import boolean
@@ -99,7 +100,10 @@ class RequestBodyValidator(object):
 
         @functools.wraps(function)
         def wrapper(*args, **kwargs):
-            data = flask.request.json
+            try:
+                data = flask.request.json
+            except BadRequest:
+                raise BadRequest('Could not parse JSON from request body. HINT: maybe you submitted an empty body?')
 
             logger.debug("%s validating schema...", flask.request.url)
             error = self.validate_schema(data)
