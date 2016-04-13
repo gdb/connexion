@@ -55,7 +55,7 @@ class Api(object):
     def __init__(self, swagger_yaml_path, base_url=None, arguments=None,
                  swagger_json=None, swagger_ui=None, swagger_path=None, swagger_url=None,
                  validate_responses=False, resolver=resolver.Resolver(),
-                 auth_all_paths=False, debug=False):
+                 auth_all_paths=False, debug=False, skip_decoration=None):
         """
         :type swagger_yaml_path: pathlib.Path
         :type base_url: str | None
@@ -124,6 +124,8 @@ class Api(object):
         if swagger_ui:
             self.add_swagger_ui()
 
+        self.skip_decoration = skip_decoration or (lambda(method, path): False)
+
         self.add_paths()
 
         if auth_all_paths:
@@ -157,7 +159,9 @@ class Api(object):
                               parameter_definitions=self.parameter_definitions,
                               response_definitions=self.response_definitions,
                               validate_responses=self.validate_responses,
-                              resolver=self.resolver)
+                              resolver=self.resolver,
+                              skip_decoration=self.skip_decoration(method, path)
+        )
         operation_id = operation.operation_id
         logger.debug('... Adding %s -> %s', method.upper(), operation_id,
                      extra=vars(operation))

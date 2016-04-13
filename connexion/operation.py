@@ -104,7 +104,7 @@ class Operation(SecureOperation):
     def __init__(self, method, path, operation, resolver, app_produces,
                  path_parameters=None, app_security=None, security_definitions=None,
                  definitions=None, parameter_definitions=None, response_definitions=None,
-                 validate_responses=False):
+                 validate_responses=False, skip_decoration=False):
         """
         This class uses the OperationID identify the module and function that will handle the operation
 
@@ -154,6 +154,7 @@ class Operation(SecureOperation):
             'responses': self.response_definitions
         }
         self.validate_responses = validate_responses
+        self.skip_decoration = skip_decoration
         self.operation = operation
 
         # todo support definition references
@@ -313,6 +314,8 @@ class Operation(SecureOperation):
 
         :rtype: types.FunctionType
         """
+        if self.skip_decoration:
+            return self.__undecorated_function
 
         function = parameter_to_arg(self.parameters, self.__undecorated_function)
 

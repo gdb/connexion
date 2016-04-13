@@ -94,7 +94,7 @@ class App(object):
 
     def add_api(self, swagger_file, base_path=None, arguments=None, auth_all_paths=None, swagger_json=None,
                 swagger_ui=None, swagger_path=None, swagger_url=None, validate_responses=False,
-                resolver=Resolver()):
+                resolver=Resolver(), skip_decoration=None):
         """
         Adds an API to the application based on a swagger file
 
@@ -141,7 +141,8 @@ class App(object):
                   resolver=resolver,
                   validate_responses=validate_responses,
                   auth_all_paths=auth_all_paths,
-                  debug=self.debug)
+                  debug=self.debug,
+                  skip_decoration=skip_decoration)
         self.app.register_blueprint(api.blueprint)
         return api
 
