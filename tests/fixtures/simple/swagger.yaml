@@ -334,6 +334,36 @@ paths:
         200:
           description: OK
 
+  /test-formData-file-upload:
+    post:
+      summary: Test formData with file type, for file upload
+      operationId: fakeapi.hello.test_formdata_file_upload
+      consumes:
+      - multipart/form-data
+      parameters:
+        - name: formData
+          type: file
+          in: formData
+          required: true
+      responses:
+        200:
+          description: OK
+
+  /test-formData-file-upload-missing-param:
+    post:
+      summary: Test formData with file type, missing parameter in handler
+      operationId: fakeapi.hello.test_formdata_file_upload_missing_param
+      consumes:
+      - multipart/form-data
+      parameters:
+        - name: missing_formData
+          type: file
+          in: formData
+          required: true
+      responses:
+        200:
+          description: OK
+
   /test-bool-param:
     get:
       summary: Test usage of boolean default value
@@ -496,6 +526,70 @@ paths:
             items:
               type: string
 
+  /nullable-parameters:
+    post:
+      operationId: fakeapi.hello.test_nullable_param_post
+      produces:
+        - application/json
+      parameters:
+        - name: post_param
+          description: Just a testing parameter.
+          in: formData
+          type: number
+          format: int32
+          x-nullable: true
+          required: true
+      responses:
+        200:
+          description: OK
+    put:
+      operationId: fakeapi.hello.test_nullable_param_put
+      produces:
+        - application/json
+      parameters:
+        - name: contents
+          description: Just a testing parameter.
+          in: body
+          x-nullable: true
+          required: true
+          schema:
+              type: object
+              properties:
+                name:
+                  type: string
+      responses:
+        200:
+          description: OK
+    get:
+      operationId: fakeapi.hello.test_nullable_parameters
+      produces:
+        - application/json
+      parameters:
+        - name: time_start
+          description: Just a testing parameter.
+          in: query
+          type: integer
+          format: int32
+          x-nullable: true
+          required: true
+      responses:
+        200:
+          description: OK
+
+  /custom-json-response:
+    get:
+      operationId: fakeapi.hello.test_custom_json_response
+      produces:
+        - application/json
+      responses:
+        200:
+          description: OK
+          schema:
+            type: object
+            properties:
+              theResult:
+                type: string
+                description: the number we wanna test
 
 definitions:
   new_stack:

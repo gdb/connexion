@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+from decimal import Decimal
+
 from connexion import problem, request
 from connexion import NoContent
 from flask import redirect
@@ -242,6 +244,16 @@ def test_formdata_missing_param():
     return ''
 
 
+def test_formdata_file_upload(formData):
+    filename = formData.filename
+    contents = formData.read().decode('utf-8')
+    return {filename: contents}
+
+
+def test_formdata_file_upload_missing_param():
+    return ''
+
+
 def test_bool_default_param(thruthiness):
     return thruthiness
 
@@ -289,3 +301,25 @@ def test_array_in_path(names):
 
 def test_global_response_definition():
     return ['general', 'list'], 200
+
+
+def test_nullable_parameters(time_start):
+    if time_start is None:
+        return 'it was None'
+    return time_start
+
+
+def test_nullable_param_post(post_param):
+    if post_param is None:
+        return 'it was None'
+    return post_param
+
+
+def test_nullable_param_put(contents):
+    if contents is None:
+        return 'it was None'
+    return contents
+
+
+def test_custom_json_response():
+    return {'theResult': DummyClass()}, 200

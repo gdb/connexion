@@ -18,11 +18,12 @@ import itertools
 import logging
 import six
 import sys
-from jsonschema import draft4_format_checker, validate, ValidationError
+from jsonschema import draft4_format_checker, validate, Draft4Validator, ValidationError
+from werkzeug import FileStorage
 from werkzeug.exceptions import BadRequest
 
 from ..problem import problem
-from ..utils import boolean
+from ..utils import boolean, is_nullable, is_null
 
 logger = logging.getLogger('connexion.decorators.validation')
 
@@ -84,13 +85,14 @@ def validate_type(param, value, parameter_type, parameter_name=None):
 
 
 class RequestBodyValidator(object):
-    def __init__(self, schema, has_default=False):
+    def __init__(self, schema, is_null_value_valid=False):
         """
         :param schema: The schema of the request body
-        :param has_default: Flag to indicate if default value is present.
+        :param is_nullable: Flag to indicate if null is accepted as valid value.
         """
         self.schema = schema
-        self.has_default = schema.get('default', has_default)
+        self.has_default = schema.get('default', False)
+        self.is_null_value_valid = is_null_value_valid
 
     def __call__(self, function):
         """
@@ -120,6 +122,9 @@ class RequestBodyValidator(object):
         :type schema: dict
         :rtype: flask.Response | None
         """
+        if self.is_null_value_valid and is_null(data):
+            return None
+
         try:
             validate(data, self.schema, format_checker=draft4_format_checker)
         except ValidationError as exception:
@@ -163,6 +168,9 @@ class ParameterValidator(object):
     @staticmethod
     def validate_parameter(parameter_type, value, param):
         if value is not None:
+            if is_nullable(param) and is_null(value):
+                return
+
             try:
                 converted_value = validate_type(param, value, parameter_type)
             except TypeValidationError as e:
@@ -172,7 +180,13 @@ class ParameterValidator(object):
             if 'required' in param:
                 del param['required']
             try:
-                validate(converted_value, param, format_checker=draft4_format_checker)
+                if parameter_type == 'formdata' and param.get('type') == 'file':
+                    Draft4Validator(
+                        param,
+                        format_checker=draft4_format_checker,
+                        types={'file': FileStorage}).validate(converted_value)
+                else:
+                    validate(converted_value, param, format_checker=draft4_format_checker)
             except ValidationError as exception:
                 print(converted_value, type(converted_value), param.get('type'), param, '<--------------------------')
                 return str(exception)
@@ -198,6 +212,14 @@ class ParameterValidator(object):
         val = flask.request.headers.get(param['name'])
         return self.validate_parameter('header', val, param)
 
+    def validate_formdata_parameter(self, param):
+        if param.get('type') == 'file':
+            val = flask.request.files.get(param['name'])
+        else:
+            val = flask.request.form.get(param['name'])
+
+        return self.validate_parameter('formdata', val, param)
+
     def __call__(self, function):
         """
         :type function: types.FunctionType
@@ -220,6 +242,11 @@ class ParameterValidator(object):
 
             for param in self.parameters.get('header', []):
                 error = self.validate_header_parameter(param)
+                if error:
+                    return problem(400, 'Bad Request', error)
+
+            for param in self.parameters.get('formData', []):
+                error = self.validate_formdata_parameter(param)
                 if error:
                     return problem(400, 'Bad Request', error)
 
