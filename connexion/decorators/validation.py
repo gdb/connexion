@@ -103,7 +103,7 @@ class RequestBodyValidator(object):
         @functools.wraps(function)
         def wrapper(*args, **kwargs):
             try:
-                data = flask.request.json
+                data = flask.request.get_json(force=True)
             except BadRequest:
                 raise BadRequest('Could not parse JSON from request body. HINT: maybe you submitted an empty body?')
 
@@ -129,10 +129,6 @@ class RequestBodyValidator(object):
             validate(data, self.schema, format_checker=draft4_format_checker)
         except ValidationError as exception:
             logger.error("%s validation error: %s" % (flask.request.url, exception))
-            if data is None:
-                content_type = flask.request.headers['Content-Type']
-                if content_type != 'application/json':
-                    return problem(400, 'Bad Request', 'Failed to load request body. (HINT: your Content-Type is {}. Perhaps try Content-Type of application/json?)'.format(content_type))
             return problem(400, 'Bad Request', '{} (while requesting {} {}). Diagnostic info: schema_path={}'.format(exception.message, flask.request.method, flask.request.path, '.'.join(exception.schema_path)))
 
         return None
