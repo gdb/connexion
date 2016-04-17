@@ -114,6 +114,8 @@ class RequestBodyValidator(object):
                     data = {}
                 else:
                     raise BadRequest('Could not parse request body JSON: {}.'.format(e))
+            # HACK: shouldn't be setting this by hand.
+            flask.request._cached_json = data
             logger.debug("%s validating schema...", flask.request.url)
             error = self.validate_schema(data)
             if error and not self.has_default:
