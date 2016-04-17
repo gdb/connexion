@@ -14,6 +14,10 @@ Unless required by applicable law or agreed to in writing, software distributed 
 import copy
 import flask
 import functools
+try:
+    import ujson as json
+except ImportError:
+    import json
 import itertools
 import logging
 import six
@@ -102,16 +106,14 @@ class RequestBodyValidator(object):
 
         @functools.wraps(function)
         def wrapper(*args, **kwargs):
+            raw = flask.request.get_data(cache=True)
             try:
-                data = flask.request.get_json(force=True, cache=True)
-            except BadRequest:
+                data = json.loads(raw)
+            except ValueError as e:
                 if flask.request.data == '':
                     data = {}
-                    # Populate the cache; future get_json calls will return None
-                    flask.request.get_json(force=True, silent=True, cache=True)
                 else:
-                    raise BadRequest('Could not parse request body JSON.')
-
+                    raise BadRequest('Could not parse request body JSON: {}.'.format(e))
             logger.debug("%s validating schema...", flask.request.url)
             error = self.validate_schema(data)
             if error and not self.has_default:
