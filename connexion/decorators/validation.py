@@ -103,9 +103,14 @@ class RequestBodyValidator(object):
         @functools.wraps(function)
         def wrapper(*args, **kwargs):
             try:
-                data = flask.request.get_json(force=True)
+                data = flask.request.get_json(force=True, cache=True)
             except BadRequest:
-                raise BadRequest('Could not parse JSON from request body. HINT: maybe you submitted an empty body?')
+                if flask.request.data == '':
+                    data = {}
+                    # Populate the cache; future get_json calls will return None
+                    flask.request.get_json(force=True, silent=True, cache=True)
+                else:
+                    raise BadRequest('Could not parse request body JSON.')
 
             logger.debug("%s validating schema...", flask.request.url)
             error = self.validate_schema(data)
